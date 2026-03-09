@@ -8,21 +8,35 @@ const processManager = require('./processManager');
 const tunnelManager = require('./tunnelManager');
 const db = require('../db/database');
 
+// [C1] Command allowlist — only these binaries can be executed
+const ALLOWED_COMMANDS = new Set([
+  'npm', 'node', 'npx', 'pip', 'pip3', 'python', 'python3',
+  'go', 'cargo', 'composer', 'bundle', 'flask', 'uvicorn',
+  'rails', 'php', 'ruby', 'serve',
+]);
+
+// [H1] Deploy lock map — prevents concurrent deploys on same app
+const deployLocks = new Map();
+
 /**
  * Runs a shell command with SHELL_ENV, streams output to emit callback.
- * Resolves on exit 0, rejects otherwise.
+ * [C1] Validates command against allowlist and uses shell: false.
  */
 async function runCommand(command, cwd, appId, emit) {
-  // Replace $PORT with actual port from env
   const parts = command.split(' ');
   const cmd = parts[0];
   const args = parts.slice(1);
+
+  // [C1] Validate command against allowlist
+  if (!ALLOWED_COMMANDS.has(cmd)) {
+    throw new Error(`Command '${cmd}' is not in the allowlist. Allowed: ${[...ALLOWED_COMMANDS].join(', ')}`);
+  }
 
   return new Promise((resolve, reject) => {
     const proc = spawn(cmd, args, {
       cwd,
       env: SHELL_ENV,
-      shell: true,
+      shell: false,  // [C1] FIXED: shell: false prevents shell injection
     });
 
     proc.stdout.on('data', (data) => {
@@ -58,23 +72,33 @@ async function runCommand(command, cwd, appId, emit) {
 
 /**
  * Orchestrates the full deploy pipeline for an app.
- * Emits WebSocket events at each step for real-time UI updates.
- *
- * @param {string} appId - Unique app identifier
- * @param {string} repoUrl - Git repository URL
- * @param {string} branch - Git branch to deploy
- * @param {object|null} config - Existing config (null on first deploy, scanner will detect)
- * @param {number} port - Port assigned to this app
- * @param {object} envVars - Environment variables to pass to the app
- * @param {boolean} isFirstDeploy - Whether this is the first deploy
- * @param {function} emit - WebSocket emit function: emit(event, appId, data)
+ * [H1] Uses deploy locking to prevent concurrent deploys on the same app.
  */
 async function runDeploy(appId, repoUrl, branch, config, port, envVars, isFirstDeploy, emit) {
+  // [H1] Wait for any existing deploy on this app to finish
+  if (deployLocks.has(appId)) {
+    try {
+      await deployLocks.get(appId);
+    } catch {
+      // Previous deploy failed — continue with new deploy
+    }
+  }
+
+  const deployPromise = _runDeployInternal(appId, repoUrl, branch, config, port, envVars, isFirstDeploy, emit);
+  deployLocks.set(appId, deployPromise);
+
+  try {
+    await deployPromise;
+  } finally {
+    deployLocks.delete(appId);
+  }
+}
+
+async function _runDeployInternal(appId, repoUrl, branch, config, port, envVars, isFirstDeploy, emit) {
   const appPath = path.join(APPS_DIR, appId);
   const deployId = uuidv4();
   const startedAt = new Date().toISOString();
 
-  // Create deploy record
   db.createDeploy({
     id: deployId,
     app_id: appId,
@@ -175,7 +199,6 @@ async function runDeploy(appId, repoUrl, branch, config, port, envVars, isFirstD
     emit('status_change', appId, 'starting');
     db.updateApp(appId, { status: 'starting' });
 
-    // Stop existing process if redeploying
     await processManager.stopApp(appId).catch(() => {});
     await processManager.deleteApp(appId).catch(() => {});
 
@@ -225,7 +248,6 @@ async function runDeploy(appId, repoUrl, branch, config, port, envVars, isFirstD
     });
 
   } catch (err) {
-    // ── Error handling ────────────────────────────────────
     emit('status_change', appId, 'error');
     db.updateApp(appId, { status: 'error' });
 
