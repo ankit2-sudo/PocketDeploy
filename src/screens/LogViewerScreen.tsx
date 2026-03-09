@@ -175,7 +175,7 @@ export default function LogViewerScreen() {
   );
 }
 
-// ── Helper ────────────────────────────────────────────────
+// ── Helper ───────────────────────────────────────────────
 function formatTimestamp(ts: string): string {
   try {
     const d = new Date(ts);
