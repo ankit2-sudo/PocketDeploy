@@ -35,9 +35,10 @@ export default function AppDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // ── Fetch deploys and env vars ─────────────────────────
   const fetchDetails = useCallback(async () => {
     try {
-      const [d] = await Promise.all([
+      const [d, app] = await Promise.all([
         engineClient.getDeploys(appId),
         engineClient.getApp(appId),
       ]);
@@ -55,6 +56,7 @@ export default function AppDetailScreen() {
     setRefreshing(false);
   };
 
+  // ── Action handlers ────────────────────────────────────
   const handleAction = async (action: string, fn: () => Promise<void>) => {
     setActionLoading(action);
     try {
@@ -117,6 +119,7 @@ export default function AppDetailScreen() {
   const isRunning = app.status === 'running';
   const isDeploying = ['cloning', 'installing', 'building', 'starting'].includes(app.status);
 
+  // ── Action Button ──────────────────────────────────────
   const ActionButton = ({
     label,
     action,
@@ -176,7 +179,7 @@ export default function AppDetailScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" />
         }
       >
-        {/* Tunnel URL Card */}
+        {/* ── Tunnel URL Card ──────────────────────────── */}
         <View className="mx-4 mt-4">
           {app.tunnelUrl ? (
             <TouchableOpacity
@@ -203,7 +206,7 @@ export default function AppDetailScreen() {
           )}
         </View>
 
-        {/* Action Buttons */}
+        {/* ── Action Buttons ───────────────────────────── */}
         <View className="flex-row mx-4 mt-4">
           <ActionButton
             label="Redeploy"
@@ -226,7 +229,7 @@ export default function AppDetailScreen() {
           />
         </View>
 
-        {/* Logs Button */}
+        {/* ── Logs Button ──────────────────────────────── */}
         <TouchableOpacity
           onPress={() => navigation.navigate('LogViewer', { appId, appName: app.name })}
           className="mx-4 mt-3 bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex-row items-center justify-between"
@@ -238,7 +241,7 @@ export default function AppDetailScreen() {
           <Text className="text-zinc-500 text-lg">&gt;</Text>
         </TouchableOpacity>
 
-        {/* Recent Deploys */}
+        {/* ── Recent Deploys ───────────────────────────── */}
         <View className="mx-4 mt-6">
           <Text className="text-white font-semibold text-base mb-3">Recent Deploys</Text>
           {deploys.length === 0 ? (
@@ -265,7 +268,9 @@ export default function AppDetailScreen() {
                     {deploy.trigger === 'webhook' ? 'Auto-deploy' : 'Manual deploy'}
                   </Text>
                   <Text className="text-zinc-500 text-xs">
-                    {deploy.startedAt ? new Date(deploy.startedAt).toLocaleString() : 'Unknown'}
+                    {deploy.startedAt
+                      ? new Date(deploy.startedAt).toLocaleString()
+                      : 'Unknown'}
                   </Text>
                 </View>
                 <Text
@@ -284,7 +289,7 @@ export default function AppDetailScreen() {
           )}
         </View>
 
-        {/* Environment Variables */}
+        {/* ── Environment Variables ─────────────────────── */}
         <View className="mx-4 mt-6">
           <View className="flex-row items-center justify-between mb-3">
             <Text className="text-white font-semibold text-base">Environment Variables</Text>
@@ -294,6 +299,8 @@ export default function AppDetailScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Add form */}
           {showEnvForm && (
             <View className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 mb-3">
               <TextInput
@@ -319,6 +326,8 @@ export default function AppDetailScreen() {
               </TouchableOpacity>
             </View>
           )}
+
+          {/* Existing vars */}
           {envVars.length === 0 && !showEnvForm ? (
             <View className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
               <Text className="text-zinc-500 text-sm">No environment variables set</Text>
@@ -346,7 +355,7 @@ export default function AppDetailScreen() {
           )}
         </View>
 
-        {/* App Info */}
+        {/* ── App Info ─────────────────────────────────── */}
         <View className="mx-4 mt-6 mb-4">
           <Text className="text-white font-semibold text-base mb-3">App Info</Text>
           <View className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
@@ -357,7 +366,7 @@ export default function AppDetailScreen() {
               ['Created', app.createdAt ? new Date(app.createdAt).toLocaleDateString() : '-'],
               ['Last Deploy', app.lastDeploy ? new Date(app.lastDeploy).toLocaleString() : 'Never'],
             ].map(([label, value]) => (
-              <View key={label} className="flex-row justify-between py-2 border-b border-zinc-800">
+              <View key={label} className="flex-row justify-between py-2 border-b border-zinc-800 last:border-b-0">
                 <Text className="text-zinc-400 text-sm">{label}</Text>
                 <Text className="text-white text-sm">{value}</Text>
               </View>
@@ -365,7 +374,7 @@ export default function AppDetailScreen() {
           </View>
         </View>
 
-        {/* Danger Zone */}
+        {/* ── Danger Zone ──────────────────────────────── */}
         <View className="mx-4 mt-2 mb-8">
           <TouchableOpacity
             onPress={handleDelete}
