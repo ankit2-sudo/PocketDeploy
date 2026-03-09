@@ -27,25 +27,21 @@ export default function AddAppScreen() {
   const navigation = useNavigation<any>();
   const { addApp } = useAppStore();
 
-  // ── Step state ──────────────────────────────────────────
   const [step, setStep] = useState<Step>('input');
   const stepIndex = step === 'input' ? 0 : step === 'review' ? 1 : 2;
 
-  // ── Step 1: Input ──────────────────────────────────────
   const [repoUrl, setRepoUrl] = useState('');
   const [appName, setAppName] = useState('');
   const [branch, setBranch] = useState('main');
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
 
-  // ── Step 2: Review ─────────────────────────────────────
   const [config, setConfig] = useState<DetectedConfig | null>(null);
   const [installCmd, setInstallCmd] = useState('');
   const [buildCmd, setBuildCmd] = useState('');
   const [startCmd, setStartCmd] = useState('');
   const [editingField, setEditingField] = useState<string | null>(null);
 
-  // ── Step 3: Deploy ─────────────────────────────────────
   const [deployAppId, setDeployAppId] = useState<string | null>(null);
   const [deployStatus, setDeployStatus] = useState<AppStatus>('idle');
   const [deployLogs, setDeployLogs] = useState<LogLine[]>([]);
@@ -54,7 +50,6 @@ export default function AddAppScreen() {
   const [deployError, setDeployError] = useState<string | null>(null);
   const [tunnelUrl, setTunnelUrl] = useState<string | null>(null);
 
-  // ── Auto-fill app name from repo URL ───────────────────
   useEffect(() => {
     if (!repoUrl) return;
     try {
@@ -64,7 +59,6 @@ export default function AddAppScreen() {
     } catch {}
   }, [repoUrl]);
 
-  // ── WebSocket listeners for deploy progress ────────────
   useEffect(() => {
     if (step !== 'deploying' || !deployAppId) return;
 
@@ -91,25 +85,17 @@ export default function AddAppScreen() {
     wsClient.onStatusChange(handleStatus);
     wsClient.onDeployComplete(handleDone);
     wsClient.onTunnelReady(handleTunnel);
-
-    // Note: In production, add cleanup by tracking and removing callbacks
   }, [step, deployAppId]);
 
-  // ── Scan repository ────────────────────────────────────
   const handleScan = async () => {
     if (!repoUrl.trim()) return;
     setScanning(true);
     setScanError(null);
     try {
-      // The engine clones the repo temporarily, scans it, and returns config
-      // We use the createApp endpoint which handles clone + scan + deploy
-      // But first, let's just validate the URL format
       const urlPattern = /^https?:\/\/(github\.com|gitlab\.com)\/[\w.-]+\/[\w.-]+/;
       if (!urlPattern.test(repoUrl.trim())) {
         throw new Error('Please enter a valid GitHub or GitLab repository URL');
       }
-
-      // For the review step, we request a scan-only operation
       const result = await engineClient.scanRepo(repoUrl.trim(), branch);
       setConfig(result);
       setInstallCmd(result.installCommand || '');
@@ -123,7 +109,6 @@ export default function AddAppScreen() {
     }
   };
 
-  // ── Deploy app ─────────────────────────────────────────
   const handleDeploy = async () => {
     setStep('deploying');
     setDeployLogs([]);
@@ -147,7 +132,6 @@ export default function AddAppScreen() {
     }
   };
 
-  // ── Get project type display info ──────────────────────
   const getProjectIcon = (type: string) => {
     const icons: Record<string, string> = {
       nextjs: 'N', cra: 'R', vite: 'V', express: 'Ex',
@@ -167,7 +151,6 @@ export default function AddAppScreen() {
     return labels[type] || type;
   };
 
-  // ── Step indicator ─────────────────────────────────────
   const renderStepIndicator = () => (
     <View className="flex-row items-center justify-center mb-6 px-4">
       {STEP_LABELS.map((label, i) => (
@@ -202,7 +185,6 @@ export default function AddAppScreen() {
     </View>
   );
 
-  // ── Command row (editable) ─────────────────────────────
   const renderCommandRow = (
     label: string,
     value: string,
@@ -240,7 +222,6 @@ export default function AddAppScreen() {
 
   return (
     <View className="flex-1 bg-[#0a0a0a]">
-      {/* Header */}
       <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-zinc-800">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -258,14 +239,11 @@ export default function AddAppScreen() {
         <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
           {renderStepIndicator()}
 
-          {/* ── STEP 1: Repo Input ────────────────────── */}
           {step === 'input' && (
             <View>
               <Text className="text-zinc-400 text-sm mb-4">
                 Paste a GitHub repository URL to get started.
               </Text>
-
-              {/* Repo URL */}
               <Text className="text-zinc-400 text-xs mb-1 ml-1">Repository URL</Text>
               <TextInput
                 className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white text-base mb-4"
@@ -277,8 +255,6 @@ export default function AddAppScreen() {
                 autoCorrect={false}
                 keyboardType="url"
               />
-
-              {/* App Name */}
               <Text className="text-zinc-400 text-xs mb-1 ml-1">App Name</Text>
               <TextInput
                 className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white text-base mb-4"
@@ -289,8 +265,6 @@ export default function AddAppScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-
-              {/* Branch */}
               <Text className="text-zinc-400 text-xs mb-1 ml-1">Branch</Text>
               <TextInput
                 className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white text-base mb-6"
@@ -301,44 +275,32 @@ export default function AddAppScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-
-              {/* Scan Error */}
               {scanError && (
                 <View className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-4">
                   <Text className="text-red-400 text-sm">{scanError}</Text>
                 </View>
               )}
-
-              {/* Scan Button */}
               <TouchableOpacity
                 onPress={handleScan}
                 disabled={scanning || !repoUrl.trim()}
                 className={`rounded-xl py-4 items-center ${
-                  scanning || !repoUrl.trim()
-                    ? 'bg-zinc-700'
-                    : 'bg-indigo-500'
+                  scanning || !repoUrl.trim() ? 'bg-zinc-700' : 'bg-indigo-500'
                 }`}
               >
                 {scanning ? (
                   <View className="flex-row items-center">
                     <ActivityIndicator color="#ffffff" size="small" />
-                    <Text className="text-white font-semibold text-base ml-2">
-                      Scanning...
-                    </Text>
+                    <Text className="text-white font-semibold text-base ml-2">Scanning...</Text>
                   </View>
                 ) : (
-                  <Text className="text-white font-semibold text-base">
-                    Scan Repository
-                  </Text>
+                  <Text className="text-white font-semibold text-base">Scan Repository</Text>
                 )}
               </TouchableOpacity>
             </View>
           )}
 
-          {/* ── STEP 2: Review Detection ──────────────── */}
           {step === 'review' && config && (
             <View>
-              {/* Detected Project Type */}
               <View className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
                 <View className="flex-row items-center mb-3">
                   <View className="w-12 h-12 rounded-xl bg-indigo-500/20 items-center justify-center mr-3">
@@ -355,7 +317,6 @@ export default function AddAppScreen() {
                     </Text>
                   </View>
                 </View>
-
                 {config.envVarsDetected && (
                   <View className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-2">
                     <Text className="text-yellow-400 text-xs">
@@ -364,26 +325,16 @@ export default function AddAppScreen() {
                   </View>
                 )}
               </View>
-
-              {/* Commands */}
-              <Text className="text-white font-semibold text-base mb-3">
-                Build Commands
-              </Text>
+              <Text className="text-white font-semibold text-base mb-3">Build Commands</Text>
               {renderCommandRow('Install', installCmd, setInstallCmd, 'install')}
               {renderCommandRow('Build', buildCmd, setBuildCmd, 'build')}
               {renderCommandRow('Start', startCmd, setStartCmd, 'start')}
-
-              {/* Deploy Button */}
               <TouchableOpacity
                 onPress={handleDeploy}
                 className="bg-indigo-500 rounded-xl py-4 items-center mt-4 mb-2"
               >
-                <Text className="text-white font-bold text-base">
-                  Deploy Now
-                </Text>
+                <Text className="text-white font-bold text-base">Deploy Now</Text>
               </TouchableOpacity>
-
-              {/* Back */}
               <TouchableOpacity
                 onPress={() => setStep('input')}
                 className="py-3 items-center"
@@ -393,53 +344,33 @@ export default function AddAppScreen() {
             </View>
           )}
 
-          {/* ── STEP 3: Deploy Progress ───────────────── */}
           {step === 'deploying' && (
             <View className="flex-1">
-              {/* Deploy step visualization */}
               <DeployProgress currentStatus={deployStatus} />
-
-              {/* Success Banner */}
               {deployDone && deploySuccess && (
                 <View className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 mb-4">
-                  <Text className="text-green-400 font-bold text-lg mb-1">
-                    Your app is live!
-                  </Text>
+                  <Text className="text-green-400 font-bold text-lg mb-1">Your app is live!</Text>
                   {tunnelUrl ? (
                     <TouchableOpacity onPress={() => Linking.openURL(tunnelUrl)}>
                       <View className="bg-green-500/20 rounded-lg px-3 py-2 mt-2">
-                        <Text className="text-green-300 text-sm font-mono">
-                          {tunnelUrl}
-                        </Text>
+                        <Text className="text-green-300 text-sm font-mono">{tunnelUrl}</Text>
                       </View>
                     </TouchableOpacity>
                   ) : (
-                    <Text className="text-zinc-400 text-sm">
-                      Tunnel is starting...
-                    </Text>
+                    <Text className="text-zinc-400 text-sm">Tunnel is starting...</Text>
                   )}
                 </View>
               )}
-
-              {/* Error Banner */}
               {deployDone && !deploySuccess && (
                 <View className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-4">
-                  <Text className="text-red-400 font-bold text-base mb-1">
-                    Deploy Failed
-                  </Text>
-                  <Text className="text-red-300 text-sm">
-                    {deployError || 'Unknown error occurred'}
-                  </Text>
+                  <Text className="text-red-400 font-bold text-base mb-1">Deploy Failed</Text>
+                  <Text className="text-red-300 text-sm">{deployError || 'Unknown error occurred'}</Text>
                 </View>
               )}
-
-              {/* Log Stream */}
               <View className="mt-2 flex-1" style={{ minHeight: 300 }}>
                 <Text className="text-zinc-400 text-xs mb-2 ml-1">Build Output</Text>
                 <LogStream logs={deployLogs} />
               </View>
-
-              {/* Done Actions */}
               {deployDone && (
                 <View className="mt-4 mb-8">
                   <TouchableOpacity
