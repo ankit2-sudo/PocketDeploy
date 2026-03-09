@@ -32,7 +32,6 @@ interface AppStore {
 const MAX_LOG_LINES = 500;
 
 export const useAppStore = create<AppStore>((set, get) => {
-  // Store unsubscribe functions
   let unsubscribers: (() => void)[] = [];
 
   return {
@@ -43,10 +42,8 @@ export const useAppStore = create<AppStore>((set, get) => {
     error: null,
 
     init: () => {
-      // Connect WebSocket
       wsClient.connect();
 
-      // Subscribe to events
       const unsub1 = wsClient.onConnectionChange((connected) => {
         get().setEngineConnected(connected);
         if (connected) {
