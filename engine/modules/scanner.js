@@ -1,18 +1,57 @@
 const fs = require('fs');
 const path = require('path');
 
+// [L5] Safe file reader — checks for symlinks before reading
+function safeReadFileSync(filePath, encoding) {
+  const stat = fs.lstatSync(filePath);
+  if (stat.isSymbolicLink()) {
+    console.warn(`[Scanner] Skipping symlink: ${filePath}`);
+    return null;
+  }
+  return fs.readFileSync(filePath, encoding);
+}
+
 /**
  * Scans a cloned repo and detects the project type, language,
  * and the exact commands needed to install, build, and start the app.
  */
 function detectProject(repoPath) {
   const files = fs.readdirSync(repoPath);
-  let envVarsDetected = fs.existsSync(path.join(repoPath, '.env'));
+
+  // [M9] Warn and clean up .env files from cloned repos
+  const envPath = path.join(repoPath, '.env');
+  let envVarsDetected = false;
+  if (fs.existsSync(envPath)) {
+    envVarsDetected = true;
+    console.warn(`[Scanner] WARNING: .env file detected in cloned repo at ${envPath}. ` +
+      'Secrets should be configured via the app environment variables UI, not committed to repos.');
+    // Remove .env to prevent accidental secret exposure on disk
+    try {
+      fs.unlinkSync(envPath);
+      console.warn('[Scanner] Removed .env file from cloned repo.');
+    } catch (err) {
+      console.warn(`[Scanner] Failed to remove .env: ${err.message}`);
+    }
+  }
 
   // ── Node.js ──────────────────────────────────────────────
   if (files.includes('package.json')) {
     try {
-      const pkg = JSON.parse(fs.readFileSync(path.join(repoPath, 'package.json'), 'utf8'));
+      // [L5] Use safe reader to avoid symlink attacks
+      const pkgContent = safeReadFileSync(path.join(repoPath, 'package.json'), 'utf8');
+      if (!pkgContent) {
+        return {
+          projectType: 'node',
+          language: 'javascript',
+          installCommand: 'npm install',
+          buildCommand: null,
+          startCommand: 'node index.js',
+          confidence: 'low',
+          envVarsDetected,
+        };
+      }
+
+      const pkg = JSON.parse(pkgContent);
       const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
       const scripts = pkg.scripts || {};
 
@@ -89,7 +128,9 @@ function detectProject(repoPath) {
 
   // ── Python ────────────────────────────────────────────────
   if (files.includes('requirements.txt')) {
-    const reqs = fs.readFileSync(path.join(repoPath, 'requirements.txt'), 'utf8').toLowerCase();
+    // [L5] Safe read
+    const reqsContent = safeReadFileSync(path.join(repoPath, 'requirements.txt'), 'utf8');
+    const reqs = (reqsContent || '').toLowerCase();
 
     if (reqs.includes('django')) {
       return {
@@ -104,7 +145,6 @@ function detectProject(repoPath) {
     }
 
     if (reqs.includes('fastapi') || reqs.includes('uvicorn')) {
-      // Try to find the main module
       let mainModule = 'main:app';
       if (files.includes('app.py')) mainModule = 'app:app';
       else if (files.includes('server.py')) mainModule = 'server:app';
