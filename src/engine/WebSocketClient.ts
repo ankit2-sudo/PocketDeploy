@@ -98,7 +98,7 @@ class WebSocketClient {
     }
   }
 
-  // Event Listeners
+  // ── Event Listeners ──────────────────────────────────────────
 
   onLog(cb: LogCallback): () => void {
     this.callbacks.log.push(cb);
