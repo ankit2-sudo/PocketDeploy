@@ -29,7 +29,7 @@ router.post('/:appId', express.raw({ type: 'application/json' }), async (req, re
     return res.status(400).json({ error: 'No webhook secret configured for this app' });
   }
 
-  // ── Validate GitHub HMAC-SHA256 signature ──────────────
+  // ── Validate GitHub HMAC-SHA256 signature ──────────────────────
   const sig = req.headers['x-hub-signature-256'];
   if (!sig) {
     return res.status(401).json({ error: 'No signature header' });
@@ -49,7 +49,7 @@ router.post('/:appId', express.raw({ type: 'application/json' }), async (req, re
     return res.status(401).json({ error: 'Signature verification failed' });
   }
 
-  // ── Check event type ───────────────────────────────────
+  // ── Check event type ─────────────────────────────────────────
   const event = req.headers['x-github-event'];
   if (event === 'ping') {
     return res.status(200).json({ message: 'Pong! Webhook configured successfully.' });
@@ -59,7 +59,7 @@ router.post('/:appId', express.raw({ type: 'application/json' }), async (req, re
     return res.status(200).json({ message: `Ignored event: ${event}` });
   }
 
-  // ── Check branch ───────────────────────────────────────
+  // ── Check branch ─────────────────────────────────────────────
   let payload;
   try {
     payload = JSON.parse(rawBody.toString());
@@ -72,7 +72,7 @@ router.post('/:appId', express.raw({ type: 'application/json' }), async (req, re
     return res.status(200).json({ message: `Ignored push to ${pushedBranch}, watching ${app.branch}` });
   }
 
-  // ── Respond immediately, deploy async ──────────────────
+  // ── Respond immediately, deploy async ────────────────────────
   res.status(200).json({ message: 'Deploy triggered', appId });
 
   // Get env vars for this app
