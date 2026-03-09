@@ -21,13 +21,13 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
         return;
       }
 
-      // Setup is done -- wait for engine to be ready
+      // Setup is done — wait for engine to be ready
       const engineReady = await engineClient.waitForEngine(10000, 500);
 
       if (engineReady) {
         navigation.replace('Dashboard');
       } else {
-        // Engine not responding -- might need to restart it
+        // Engine not responding — might need to restart it
         // Navigate to dashboard anyway, it will show connection status
         navigation.replace('Dashboard');
       }
