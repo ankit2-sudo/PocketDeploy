@@ -57,6 +57,17 @@ function initialize() {
   `);
 }
 
+// ── [C2] Column allowlists — prevent SQL column injection ────
+const ALLOWED_APP_COLUMNS = new Set([
+  'name', 'repo_url', 'branch', 'project_type', 'install_cmd',
+  'build_cmd', 'start_cmd', 'port', 'tunnel_url', 'webhook_secret',
+  'status', 'created_at', 'last_deploy',
+]);
+
+const ALLOWED_DEPLOY_COLUMNS = new Set([
+  'trigger', 'status', 'log', 'started_at', 'finished_at',
+]);
+
 // ── Apps CRUD ──────────────────────────────────────────────────
 
 function createApp(app) {
@@ -75,12 +86,15 @@ function getAllApps() {
   return getDb().prepare('SELECT * FROM apps ORDER BY created_at DESC').all();
 }
 
+// [C2] Validate column names against allowlist before building SQL
 function updateApp(id, fields) {
-  const keys = Object.keys(fields);
+  const keys = Object.keys(fields).filter((k) => ALLOWED_APP_COLUMNS.has(k));
   if (keys.length === 0) return;
+  const sanitized = {};
+  for (const k of keys) { sanitized[k] = fields[k]; }
   const sets = keys.map((k) => `${k} = @${k}`).join(', ');
   const stmt = getDb().prepare(`UPDATE apps SET ${sets} WHERE id = @id`);
-  return stmt.run({ id, ...fields });
+  return stmt.run({ id, ...sanitized });
 }
 
 function deleteApp(id) {
@@ -110,15 +124,21 @@ function getDeploysByApp(appId, limit = 20) {
   return getDb().prepare('SELECT * FROM deploys WHERE app_id = ? ORDER BY started_at DESC LIMIT ?').all(appId, limit);
 }
 
+// [C2] Validate column names against allowlist before building SQL
 function updateDeploy(id, fields) {
-  const keys = Object.keys(fields);
+  const keys = Object.keys(fields).filter((k) => ALLOWED_DEPLOY_COLUMNS.has(k));
   if (keys.length === 0) return;
+  const sanitized = {};
+  for (const k of keys) { sanitized[k] = fields[k]; }
   const sets = keys.map((k) => `${k} = @${k}`).join(', ');
   const stmt = getDb().prepare(`UPDATE deploys SET ${sets} WHERE id = @id`);
-  return stmt.run({ id, ...fields });
+  return stmt.run({ id, ...sanitized });
 }
 
 // ── Env Vars CRUD ──────────────────────────────────────────────
+// [H5] NOTE: Env var values are stored in plaintext. For production use,
+// consider encrypting values at rest using sqlcipher or application-level
+// AES-256 encryption before writing to the database.
 
 function setEnvVars(appId, vars) {
   const deleteStmt = getDb().prepare('DELETE FROM env_vars WHERE app_id = ?');
