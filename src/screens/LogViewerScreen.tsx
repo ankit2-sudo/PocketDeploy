@@ -56,7 +56,7 @@ export default function LogViewerScreen() {
     }
   }, [filteredLogs.length, autoScroll]);
 
-  // ── Clear logs ─────────────────────────────────────────
+  // ── Clear logs ─────────────────────────────────────
   const handleClear = () => {
     setHistoricalLogs([]);
   };
@@ -70,7 +70,7 @@ export default function LogViewerScreen() {
     }
   };
 
-  // ── Render log line ────────────────────────────────────
+  // ── Render log line ───────────────────────────────────
   const renderLogLine: ListRenderItem<LogLine> = useCallback(
     ({ item, index }) => (
       <View className="flex-row px-3 py-0.5" key={index}>
@@ -175,7 +175,7 @@ export default function LogViewerScreen() {
   );
 }
 
-// ── Helper ───────────────────────────────────────────────
+// ── Helper ────────────────────────────────────────────────
 function formatTimestamp(ts: string): string {
   try {
     const d = new Date(ts);
