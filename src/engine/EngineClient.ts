@@ -14,7 +14,7 @@ class EngineClient {
     });
   }
 
-  // ── Health ─────────────────────────────────────────────
+  // ── Health ──────────────────────────────────────────────────────
 
   async checkHealth(): Promise<{ status: string; appsRunning: number; totalApps: number }> {
     try {
@@ -38,7 +38,7 @@ class EngineClient {
     return false;
   }
 
-  // ── Apps ───────────────────────────────────────────────
+  // ── Apps ─────────────────────────────────────────────────────
 
   async createApp(repoUrl: string, name: string, branch: string = 'main'): Promise<App> {
     const { data } = await this.api.post('/apps', { repoUrl, name, branch });
@@ -59,7 +59,7 @@ class EngineClient {
     await this.api.delete(`/apps/${id}`);
   }
 
-  // ── Deploy Controls ────────────────────────────────────
+  // ── Deploy Controls ──────────────────────────────────────────
 
   async deployApp(id: string): Promise<void> {
     await this.api.post(`/apps/${id}/deploy`);
@@ -77,7 +77,7 @@ class EngineClient {
     await this.api.post(`/apps/${id}/restart`);
   }
 
-  // ── Logs & Deploys ─────────────────────────────────────
+  // ── Logs & Deploys ─────────────────────────────────────────
 
   async getLogs(id: string): Promise<LogLine[]> {
     const { data } = await this.api.get(`/apps/${id}/logs`);
@@ -89,20 +89,20 @@ class EngineClient {
     return data;
   }
 
-  // ── Environment Variables ──────────────────────────────
+  // ── Environment Variables ──────────────────────────────────
 
   async setEnvVars(id: string, vars: { key: string; value: string }[]): Promise<void> {
     await this.api.post(`/apps/${id}/env`, { vars });
   }
 
-  // ── Tunnel ─────────────────────────────────────────────
+  // ── Tunnel ──────────────────────────────────────────────────
 
   async getTunnelUrl(id: string): Promise<string | null> {
     const { data } = await this.api.get(`/apps/${id}/tunnel`);
     return data.url || null;
   }
 
-  // ── Repo Scanning ──────────────────────────────────────
+  // ── Repo Scanning ──────────────────────────────────────────
 
   async scanRepo(repoUrl: string, branch: string = 'main'): Promise<{
     projectType: string;
@@ -117,7 +117,7 @@ class EngineClient {
     return data;
   }
 
-  // ── Settings / Global Controls ─────────────────────────
+  // ── Settings / Global Controls ─────────────────────────────
 
   async setGitHubToken(token: string): Promise<void> {
     await this.api.post('/settings/github-token', { token });
