@@ -27,25 +27,25 @@ export default function AddAppScreen() {
   const navigation = useNavigation<any>();
   const { addApp } = useAppStore();
 
-  // -- Step state
+  // ── Step state ──────────────────────────────────────────────
   const [step, setStep] = useState<Step>('input');
   const stepIndex = step === 'input' ? 0 : step === 'review' ? 1 : 2;
 
-  // -- Step 1: Input
+  // ── Step 1: Input ──────────────────────────────────────────
   const [repoUrl, setRepoUrl] = useState('');
   const [appName, setAppName] = useState('');
   const [branch, setBranch] = useState('main');
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
 
-  // -- Step 2: Review
+  // ── Step 2: Review ─────────────────────────────────────────
   const [config, setConfig] = useState<DetectedConfig | null>(null);
   const [installCmd, setInstallCmd] = useState('');
   const [buildCmd, setBuildCmd] = useState('');
   const [startCmd, setStartCmd] = useState('');
   const [editingField, setEditingField] = useState<string | null>(null);
 
-  // -- Step 3: Deploy
+  // ── Step 3: Deploy ─────────────────────────────────────────
   const [deployAppId, setDeployAppId] = useState<string | null>(null);
   const [deployStatus, setDeployStatus] = useState<AppStatus>('idle');
   const [deployLogs, setDeployLogs] = useState<LogLine[]>([]);
@@ -54,7 +54,7 @@ export default function AddAppScreen() {
   const [deployError, setDeployError] = useState<string | null>(null);
   const [tunnelUrl, setTunnelUrl] = useState<string | null>(null);
 
-  // -- Auto-fill app name from repo URL
+  // ── Auto-fill app name from repo URL ─────────────────────
   useEffect(() => {
     if (!repoUrl) return;
     try {
@@ -64,7 +64,7 @@ export default function AddAppScreen() {
     } catch {}
   }, [repoUrl]);
 
-  // -- WebSocket listeners for deploy progress
+  // ── WebSocket listeners for deploy progress ──────────────
   useEffect(() => {
     if (step !== 'deploying' || !deployAppId) return;
 
@@ -93,7 +93,7 @@ export default function AddAppScreen() {
     wsClient.onTunnelReady(handleTunnel);
   }, [step, deployAppId]);
 
-  // -- Scan repository
+  // ── Scan repository ─────────────────────────────────────────
   const handleScan = async () => {
     if (!repoUrl.trim()) return;
     setScanning(true);
@@ -116,7 +116,7 @@ export default function AddAppScreen() {
     }
   };
 
-  // -- Deploy app
+  // ── Deploy app ─────────────────────────────────────────────
   const handleDeploy = async () => {
     setStep('deploying');
     setDeployLogs([]);
@@ -140,7 +140,7 @@ export default function AddAppScreen() {
     }
   };
 
-  // -- Get project type display info
+  // ── Project type helpers ───────────────────────────────────
   const getProjectIcon = (type: string) => {
     const icons: Record<string, string> = {
       nextjs: 'N', cra: 'R', vite: 'V', express: 'Ex',
@@ -160,7 +160,7 @@ export default function AddAppScreen() {
     return labels[type] || type;
   };
 
-  // -- Step indicator
+  // ── Step indicator ─────────────────────────────────────────
   const renderStepIndicator = () => (
     <View className="flex-row items-center justify-center mb-6 px-4">
       {STEP_LABELS.map((label, i) => (
@@ -195,7 +195,7 @@ export default function AddAppScreen() {
     </View>
   );
 
-  // -- Command row (editable)
+  // ── Command row (editable) ─────────────────────────────────
   const renderCommandRow = (
     label: string,
     value: string,
@@ -251,7 +251,7 @@ export default function AddAppScreen() {
         <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
           {renderStepIndicator()}
 
-          {/* STEP 1: Repo Input */}
+          {/* ── STEP 1: Repo Input ──────────────────────────────────── */}
           {step === 'input' && (
             <View>
               <Text className="text-zinc-400 text-sm mb-4">
@@ -317,7 +317,7 @@ export default function AddAppScreen() {
             </View>
           )}
 
-          {/* STEP 2: Review Detection */}
+          {/* ── STEP 2: Review Detection ─────────────────────────────── */}
           {step === 'review' && config && (
             <View>
               <View className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
@@ -357,16 +357,13 @@ export default function AddAppScreen() {
                 <Text className="text-white font-bold text-base">Deploy Now</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => setStep('input')}
-                className="py-3 items-center"
-              >
+              <TouchableOpacity onPress={() => setStep('input')} className="py-3 items-center">
                 <Text className="text-zinc-400 text-sm">Back to Edit</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* STEP 3: Deploy Progress */}
+          {/* ── STEP 3: Deploy Progress ──────────────────────────────── */}
           {step === 'deploying' && (
             <View className="flex-1">
               <DeployProgress currentStatus={deployStatus} />
