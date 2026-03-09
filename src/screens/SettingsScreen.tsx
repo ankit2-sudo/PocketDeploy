@@ -30,7 +30,6 @@ export default function SettingsScreen() {
   const [restartingEngine, setRestartingEngine] = useState(false);
   const [stoppingAll, setStoppingAll] = useState(false);
 
-  // ── Load settings ──────────────────────────────────────
   useEffect(() => {
     loadSettings();
   }, []);
@@ -38,7 +37,6 @@ export default function SettingsScreen() {
   const loadSettings = async () => {
     try {
       const health = await engineClient.checkHealth();
-      // Storage info would come from an engine endpoint in production
       setStorageInfo({
         appsSize: '—',
         logsSize: '—',
@@ -47,13 +45,10 @@ export default function SettingsScreen() {
     } catch {}
   };
 
-  // ── Save GitHub token ──────────────────────────────────
   const handleSaveToken = async () => {
     if (!githubToken.trim()) return;
     setSavingToken(true);
     try {
-      // In production, this would store in Android Keystore via a native module
-      // and send to the engine for use in git operations
       await engineClient.setGitHubToken(githubToken.trim());
       setTokenSaved(true);
       Alert.alert('Saved', 'GitHub token saved securely.');
@@ -64,7 +59,6 @@ export default function SettingsScreen() {
     }
   };
 
-  // ── Restart engine ─────────────────────────────────────
   const handleRestartEngine = async () => {
     Alert.alert(
       'Restart Engine',
@@ -77,7 +71,6 @@ export default function SettingsScreen() {
             setRestartingEngine(true);
             try {
               await engineClient.restartEngine();
-              // Wait for engine to come back
               await new Promise(resolve => setTimeout(resolve, 3000));
             } catch {}
             setRestartingEngine(false);
@@ -87,7 +80,6 @@ export default function SettingsScreen() {
     );
   };
 
-  // ── Stop all apps ──────────────────────────────────────
   const handleStopAll = () => {
     const runningCount = apps.filter(a => a.status === 'running').length;
     if (runningCount === 0) {
@@ -118,7 +110,6 @@ export default function SettingsScreen() {
     );
   };
 
-  // ── Section component ──────────────────────────────────
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <View className="mx-4 mt-6">
       <Text className="text-zinc-400 text-xs uppercase tracking-wider mb-3 ml-1">
@@ -157,7 +148,6 @@ export default function SettingsScreen() {
 
   return (
     <View className="flex-1 bg-[#0a0a0a]">
-      {/* Header */}
       <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-zinc-800">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -169,7 +159,6 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView className="flex-1">
-        {/* ── Engine Status ─────────────────────────────── */}
         <Section title="Engine">
           <Row
             label="Status"
@@ -199,7 +188,6 @@ export default function SettingsScreen() {
           />
         </Section>
 
-        {/* ── GitHub Token ──────────────────────────────── */}
         <Section title="GitHub">
           <View className="px-4 py-3">
             <Text className="text-zinc-400 text-xs mb-2">
@@ -249,24 +237,12 @@ export default function SettingsScreen() {
           </View>
         </Section>
 
-        {/* ── Storage ───────────────────────────────────── */}
         <Section title="Storage">
-          <Row
-            label="Apps"
-            value={storageInfo?.appsSize || '—'}
-          />
-          <Row
-            label="Logs"
-            value={storageInfo?.logsSize || '—'}
-          />
-          <Row
-            label="Total Used"
-            value={storageInfo?.totalSize || '—'}
-            noBorder
-          />
+          <Row label="Apps" value={storageInfo?.appsSize || '—'} />
+          <Row label="Logs" value={storageInfo?.logsSize || '—'} />
+          <Row label="Total Used" value={storageInfo?.totalSize || '—'} noBorder />
         </Section>
 
-        {/* ── Danger Zone ──────────────────────────────── */}
         <Section title="Danger Zone">
           <TouchableOpacity
             onPress={handleStopAll}
@@ -284,15 +260,10 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </Section>
 
-        {/* ── About ─────────────────────────────────────── */}
         <Section title="About">
           <Row label="App" value="PocketDeploy" />
           <Row label="Version" value="1.0.0" />
-          <Row
-            label="Build"
-            value="MVP"
-            noBorder
-          />
+          <Row label="Build" value="MVP" noBorder />
         </Section>
 
         <View className="h-8" />
